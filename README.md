@@ -49,16 +49,7 @@ FractalFedSumUp_2.0/
 
 ## Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/FractalFedSumUp_2.0.git
-cd FractalFedSumUp_2.0
-```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
 
 ## Usage
 
@@ -124,13 +115,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 If you use FractalFedSumUp 2.0 in your research, please cite:
 
 ```bibtex
-@software{fractalfedsumup2.0,
-  title = {FractalFedSumUp 2.0: Advanced Federated Learning with Data Compression},
-  author = {Your Name},
-  year = {2024},
-  url = {https://github.com/yourusername/FractalFedSumUp_2.0}
-}
-```
+
 
 ## Contact
 

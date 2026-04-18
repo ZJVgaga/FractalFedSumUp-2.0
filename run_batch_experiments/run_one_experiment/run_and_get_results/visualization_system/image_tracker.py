@@ -4,52 +4,52 @@ import json
 
 class ImageTracker:
     """
-    图片追踪器：负责选择和管理需要追踪的图片
+    Image Tracker: Responsible for selecting and managing images to be tracked
     """
     def __init__(self, config, dataset_info, train_indices, train_labels):
         """
-        初始化图片追踪器
+        Initialize the image tracker
         
         Parameters:
-        - config: 配置字典
-        - dataset_info: 数据集信息
-        - train_indices: 训练数据索引列表
-        - train_labels: 训练数据标签列表
+        - config: Configuration dictionary
+        - dataset_info: Dataset information
+        - train_indices: List of training data indices
+        - train_labels: List of training data labels
         """
         self.config = config
         self.dataset_info = dataset_info
         self.train_indices = train_indices
         self.train_labels = train_labels
         
-        # 获取数据集信息
+        # Get dataset information
         self.dataset_name = config.get("Dataset", "CIFAR10")
         self.num_classes = dataset_info.get("num_classes", 10)
         self.compressed_size = config.get("compressed_image_size", 24)
         
-        # 选择需要追踪的图片
+        # Select images to track
         self.tracked_indices = self._select_tracked_images()
         
-        # 打印追踪信息
-        print(f"ImageTracker: 选择了 {len(self.tracked_indices)} 张图片进行追踪")
+        # Print tracking information
+        print(f"ImageTracker: Selected {len(self.tracked_indices)} images for tracking")
         for idx, class_id in self.tracked_indices.items():
-            print(f"  - 索引 {idx}: 类别 {class_id}")
+            print(f"  - Index {idx}: Class {class_id}")
     
     def _select_tracked_images(self):
         """
-        从train_indices中对每一个类别取两张图片获得其index
-        返回字典：{index: class_id}
+        Select two images from train_indices for each class and obtain their indices
+        Returns dictionary: {index: class_id}
         """
         tracked_indices = {}
         
-        # 按类别分组索引
+        # Group indices by class
         class_to_indices = {}
         for idx, label in zip(self.train_indices, self.train_labels):
             class_to_indices.setdefault(label, []).append(idx)
         
-        # 对每一个类别取前两张图片
+        # Take the first two images for each class
         for class_id in range(self.num_classes):
             if class_id in class_to_indices and class_to_indices[class_id]:
-                # 取该类别的前两张图片
+                # Take the first two images of this class
                 for i in range(min(2, len(class_to_indices[class_id]))):
                     selected_idx = class_to_indices[class_id][i]
                     tracked_indices[selected_idx] = class_id
@@ -57,18 +57,18 @@ class ImageTracker:
         return tracked_indices
     
     def get_tracked_indices(self):
-        """获取追踪的图片索引"""
+        """Get the tracked image indices"""
         return self.tracked_indices
     
     def get_client_responsibility(self, client_indices):
         """
-        检查客户端是否负责追踪某些图片
+        Check if a client is responsible for tracking certain images
         
         Parameters:
-        - client_indices: 客户端的数据索引列表
+        - client_indices: List of client's data indices
         
         Returns:
-        - 字典：{index: class_id}，该客户端负责追踪的图片
+        - Dictionary: {index: class_id}, images this client is responsible for tracking
         """
         responsibility = {}
         for idx, class_id in self.tracked_indices.items():
@@ -79,23 +79,23 @@ class ImageTracker:
     
     def get_save_path(self, index, class_id, round_num, is_server=False, epoch=None):
         """
-        获取保存路径
+        Get the save path
         
         Parameters:
-        - index: 图片索引
-        - class_id: 类别ID
-        - round_num: 轮次
-        - is_server: 是否为服务器端
-        - epoch: 服务器epoch（仅服务器端需要）
+        - index: Image index
+        - class_id: Class ID
+        - round_num: Round number
+        - is_server: Whether it's the server side
+        - epoch: Server epoch (only needed for server side)
         
         Returns:
-        - 保存路径
+        - Save path
         """
-        # 基础路径
+        # Base path
         base_dir = self.config.get("visualization_save_dir", "./fedsumup_visualizations")
         
-        # 根据用户要求的文件夹结构
-        # fedsumup_visualization_{datasetname}/compressed_{size}/{index}_{class}/round/client或server_epochs
+        # According to the required folder structure
+        # fedsumup_visualization_{datasetname}/compressed_{size}/{index}_{class}/round/client or server_epochs
         save_dir = os.path.join(
             base_dir,
             f"fedsumup_visualization_{self.dataset_name}",

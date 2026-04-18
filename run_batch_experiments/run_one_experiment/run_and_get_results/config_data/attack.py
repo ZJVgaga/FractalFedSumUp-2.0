@@ -1,6 +1,6 @@
 """
-攻击配置模块
-包含MIA（Membership Inference Attack）等攻击相关的配置
+Attack Configuration Module
+Contains configurations related to attacks such as MIA (Membership Inference Attack)
 """
 
 ATTACK_CONFIG = {
@@ -10,10 +10,10 @@ ATTACK_CONFIG = {
         {
             "content": "attack_mode",
             "type": "key",
-            "choice": "MIA",  # 默认不启用攻击
+            "choice": "MIA",  # Attack disabled by default
             "children": [
-                {"content": "None", "type": "value"},  # 不启用攻击
-                {"content": "MIA", "type": "value"}    # 启用MIA攻击
+                {"content": "None", "type": "value"},  # Do not enable attack
+                {"content": "MIA", "type": "value"}    # Enable MIA attack
             ]
         },
         {
@@ -23,12 +23,12 @@ ATTACK_CONFIG = {
                 {
                     "content": "MIA_data_target_ratio",
                     "type": "key",
-                    "children": [{"content": 0.7, "type": "value"}]  # 默认目标数据集比例
+                    "children": [{"content": 0.7, "type": "value"}]  # Default target dataset ratio
                 },
                 {
                     "content": "shadow_model_num",
                     "type": "key",
-                    "children": [{"content": 3, "type": "value"}]  # 阴影模型数量
+                    "children": [{"content": 3, "type": "value"}]  # Number of shadow models
                 },
                 {
                     "content": "MIA_attack_model",
@@ -42,40 +42,40 @@ ATTACK_CONFIG = {
                 {
                     "content": "MIA_train_epochs",
                     "type": "key",
-                    "children": [{"content": 50, "type": "value"}]  # MIA模型训练轮数
+                    "children": [{"content": 50, "type": "value"}]  # MIA model training epochs
                 },
                 {
                     "content": "MIA_batch_size",
                     "type": "key",
-                    "children": [{"content": 64, "type": "value"}]  # MIA模型批大小
+                    "children": [{"content": 64, "type": "value"}]  # MIA model batch size
                 },
                 {
                     "content": "MIA_learning_rate",
                     "type": "key",
-                    "children": [{"content": 0.001, "type": "value"}]  # MIA模型学习率
+                    "children": [{"content": 0.001, "type": "value"}]  # MIA model learning rate
                 },
                 {
                     "content": "attack_epochs",
                     "type": "key",
-                    "children": [{"content": 50, "type": "value"}]  # 攻击模型训练轮数
+                    "children": [{"content": 50, "type": "value"}]  # Attack model training epochs
                 },
                 {
                     "content": "attack_batch_size",
                     "type": "key",
-                    "children": [{"content": 10, "type": "value"}]  # 攻击模型批量大小
+                    "children": [{"content": 10, "type": "value"}]  # Attack model batch size
                 },
                 {
                     "content": "attack_learning_rate",
                     "type": "key",
-                    "children": [{"content": 0.001, "type": "value"}]  # 攻击模型学习率
+                    "children": [{"content": 0.001, "type": "value"}]  # Attack model learning rate
                 },
                 {
                     "content": "attack_model",
                     "type": "key",
                     "choice": "fc",
                     "children": [
-                        {"content": "fc", "type": "value"},  # 全连接网络
-                        {"content": "ConvNet", "type": "value"}  # 卷积网络
+                        {"content": "fc", "type": "value"},  # Fully connected network
+                        {"content": "ConvNet", "type": "value"}  # Convolutional network
                     ]
                 }
             ]

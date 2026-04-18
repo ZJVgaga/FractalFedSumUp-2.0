@@ -10,36 +10,36 @@ import torch.nn.functional as F
 from torch.utils.data.sampler import SubsetRandomSampler
 
 
-#用于测量通讯开销的
+# For measuring communication overhead
 class Server:
     def __init__(self, basic_modules, config, logger, clients):
         """
-        初始化服务器。
+        Initialize the server.
         
-        参数:
-        - basic_modules: 包含基本模块的字典，例如全局模型、设备等信息。
-        - config: 配置字典，包含服务器运行所需的配置参数。
-        - logger: 日志记录器，用于记录服务器运行过程中的日志信息。
-        - clients: 客户端列表或相关信息。
+        Parameters:
+        - basic_modules: Dictionary containing basic modules, such as global model, device information, etc.
+        - config: Configuration dictionary containing parameters required for server operation.
+        - logger: Logger for recording log information during server operation.
+        - clients: Client list or related information.
         """
-        self.clients = clients  # 存储所有客户端的信息
-        self.logger = logger  # 设置日志记录器
+        self.clients = clients  # Store information of all clients
+        self.logger = logger  # Set the logger
         
-        self.logger.info("正在初始化服务器...")
+        self.logger.info("Initializing server...")
         import torch.nn as nn
 
         self.criterion = nn.CrossEntropyLoss()
-        # 模型相关
-        # 使用deepcopy确保全局模型的独立性，并将其移动到指定设备上
+        # Model related
+        # Use deepcopy to ensure independence of the global model and move it to the specified device
         self.global_model = copy.deepcopy(basic_modules['global_model']).to(basic_modules['device'])
-        self.model_strategy = config.get("Model")  # 获取模型相关的策略
-        self.logger.info(f"服务器模型初始化完成: {self.model_strategy}")
+        self.model_strategy = config.get("Model")  # Get model-related strategy
+        self.logger.info(f"Server model initialization completed: {self.model_strategy}")
        
-        # 调度相关
-        self.join_ratio = config.get("join_ratio")  # 获取参与率
+        # Scheduling related
+        self.join_ratio = config.get("join_ratio")  # Get participation rate
         from diffusers import AutoencoderKL
-        # 数据相关
-        # 加载测试集并使用SubsetRandomSampler来获取特定索引的数据样本
+        # Data related
+        # Load test set and use SubsetRandomSampler to get data samples for specific indices
         self.test_set = basic_modules['dst_test']
         self.test_loader = DataLoader(
             self.test_set,
@@ -49,20 +49,20 @@ class Server:
             num_workers=0,
             pin_memory=True
         )
-        self.logger.info("服务器测试数据加载完成")
+        self.logger.info("Server test data loading completed")
         self.first_round=True
-        # 设备相关
-        self.device = basic_modules['device']  # 确定使用的设备（如CPU或GPU）
+        # Device related
+        self.device = basic_modules['device']  # Determine the device to use (e.g., CPU or GPU)
         
       
-        # 联邦学习策略
-        self.fed_strategy = config.get("Federated_Learning_Config")  # 获取联邦学习策略
-        self.logger.info(f"服务器使用联邦策略: {self.fed_strategy}")
+        # Federated learning strategy
+        self.fed_strategy = config.get("Federated_Learning_Config")  # Get federated learning strategy
+        self.logger.info(f"Server using federated strategy: {self.fed_strategy}")
         
-        # 将config保存为实例变量，以便后续访问
+        # Save config as an instance variable for later access
         self.config = config
         
-        self.logger.info("服务器初始化完成")
+        self.logger.info("Server initialization completed")
 
     def arrange_server_data_to_client(self):
         if self.first_round==True:
@@ -72,18 +72,18 @@ class Server:
         else:
             server_data = {
             "global_model": self.global_model
-        }#server_data是一个字典
-        #可以用到self.config中的超参数
+        }#server_data is a dictionary
+        #Can use hyperparameters from self.config
 
-        #在这里填写你要准备给每个客户端的数据
+        #Fill in the data you want to prepare for each client here
 
             return server_data
     
     def merge_data(self, received_data_list):
         
         merged_data = {
-            'synthetic_images': {},  # 每个类别的合成图像列表（来自不同客户端）
-            'embeddings': {}         # 每个类别的嵌入特征列表（包含 client_id）
+            'synthetic_images': {},  # List of synthetic images per category (from different clients)
+            'embeddings': {}         # List of embedding features per category (including client_id)
         }
 
         
@@ -91,14 +91,14 @@ class Server:
             if not client_data:
                 continue
 
-            # 处理合成图像
+            # Process synthetic images
             synthetic_images = client_data["synthetic_images"]
             for cls, img_tensor in synthetic_images.items():
                 if cls not in merged_data['synthetic_images']:
                     merged_data['synthetic_images'][cls] = []
                 merged_data['synthetic_images'][cls].append(img_tensor)
 
-            # 处理嵌入特征
+            # Process embedding features
             client_embeddings = client_data["client_embeddings"]
             for cls, feat_list in client_embeddings.items():
                 if cls not in merged_data['embeddings']:
@@ -108,7 +108,7 @@ class Server:
                         'mean': feat_list,
                         'client_id': client_idx
                 })
-        # 将每个类别的图像 list 合并为一个大 tensor
+        # Merge the image list for each category into one large tensor
         for cls in merged_data['synthetic_images']:
             merged_data['synthetic_images'][cls] = torch.cat(merged_data['synthetic_images'][cls], dim=0)
         self.logger.info("Data merging completed.")
@@ -116,80 +116,80 @@ class Server:
       
     
     def process(self, merged_data):
-        #对merged_data
-        #获取iterations=self.config.get("collabdm_iterations")
-        #对每一轮iterations中的t
-            #对每一个类c
-            #从merged_data['synthetic_images'][c]中随机选256张X
+        #Process merged_data
+        #Get iterations=self.config.get("collabdm_iterations")
+        #For each t in iterations
+            #For each class c
+            #Randomly select 256 images X from merged_data['synthetic_images'][c]
             #feature=self.global_model.embed(x)
-            #然后计算L_original_data=merged_data['embeddings'][cls]中所有客户端feat的第t个元素的加权平均
-            #然后计算loss=torch.sum((L_original_data - torch.mean(feature, dim=0)) ** 2)
-            #用这个loss优化merged_data['synthetic_images'][c]
+            #Then calculate L_original_data=weighted average of the t-th element of all client feats in merged_data['embeddings'][cls]
+            #Then calculate loss=torch.sum((L_original_data - torch.mean(feature, dim=0)) ** 2)
+            #Use this loss to optimize merged_data['synthetic_images'][c]
 
-        iterations = self.config.get("collabdm_iterations")  # 默认 5 次
-        batch_size = 256 # 每次采样 256 张图用于计算目标 embed
+        iterations = self.config.get("collabdm_iterations")  # Default 5 times
+        batch_size = 256 # Sample 256 images each time for calculating target embed
         device = self.device
 
-        # 提取模型 embed 层
+        # Extract model embed layer
         model = self.global_model
       
 
-        # 只保留需要优化的类
+        # Keep only classes that need optimization
         all_classes = list(merged_data['synthetic_images'].keys())
-        self.logger.info(f"开始对类别 {all_classes} 进行合成图像优化")
+        self.logger.info(f"Starting synthetic image optimization for classes {all_classes}")
 
-        # 设置优化器
+        # Set up optimizers
         syn_images_dict = {}
         optimizer_dict = {}
 
         for cls in all_classes:
-            # 复制原始合成图像作为可学习参数
+            # Copy original synthetic images as learnable parameters
             syn_images = merged_data['synthetic_images'][cls].clone().detach().to(device).requires_grad_(True)
             syn_images_dict[cls] = syn_images
             optimizer_dict[cls] = torch.optim.Adam([syn_images], lr=1)
 
-        # 开始多轮优化
+        # Start multi-round optimization
         for t in range(iterations):
-            self.logger.info(f"优化轮次 [{t+1}/{iterations}]")
+            self.logger.info(f"Optimization round [{t+1}/{iterations}]")
 
             for cls in all_classes:
-                # Step 1: 从合成图像中随机选取 batch_size 张图像
+                # Step 1: Randomly select batch_size images from synthetic images
                 indices = torch.randperm(syn_images_dict[cls].shape[0])[:batch_size]
                 x = syn_images_dict[cls][indices].to(device)
 
-                # Step 2: 前向传播得到特征
+                # Step 2: Forward propagation to get features
                 
                 feature = model.embed(x)
 
-                # Step 3: 获取真实数据在第 t 轮的平均 embed（所有客户端的平均）
+                # Step 3: Get the average embed of real data at round t (average across all clients)
                 real_feats_t = []
                 for item in merged_data['embeddings'][cls]:
-                    real_feats_t.append(item['mean'][t])  # 假设 item['mean'] 是 Tensor 或者可以转换为 Tensor 的形式
+                    real_feats_t.append(item['mean'][t])  # Assume item['mean'] is Tensor or can be converted to Tensor
 
                 real_feat_avg = torch.mean(torch.stack(real_feats_t), dim=0).to(device)
 
-                # Step 4: 计算 loss``
+                # Step 4: Calculate loss
                 loss = torch.sum((real_feat_avg - torch.mean(feature, dim=0)) ** 2)
 
-                # Step 5: 反向传播 & 优化
+                # Step 5: Backward propagation & optimization
                 optimizer = optimizer_dict[cls]
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-                self.logger.info(f"类别 {cls}: loss = {loss.item():.4f}")
+                self.logger.info(f"Class {cls}: loss = {loss.item():.4f}")
 
-        # 最终更新 merged_data 中的合成图像
+        # Finally update synthetic images in merged_data
         for cls in all_classes:
             merged_data['synthetic_images'][cls] = syn_images_dict[cls].cpu().detach()
 
-        self.logger.info("合成图像优化完成")
+        self.logger.info("Synthetic image optimization completed")
         """
-        使用 collabDM 合成图像训练全局模型，使用硬标签（cls）而不是 soft label
+        Train global model using collabDM synthetic images, using hard labels (cls) instead of soft labels
         """
-        self.logger.info("开始使用 collabDM 合成图像进行全局模型训练")
+        self.logger.info("Starting global model training using collabDM synthetic images")
 
-        # Step 1: 构造训练数据集
+        # Step 1: Construct training dataset
         synthetic_data_list = []
         target_labels_list = []
   
@@ -205,23 +205,23 @@ class Server:
         synthetic_data = torch.cat(synthetic_data_list, dim=0)
         target_labels = torch.cat(target_labels_list, dim=0)
 
-        # Step 2: 创建 DataLoader
+        # Step 2: Create DataLoader
         dataset = TensorDataset(synthetic_data, target_labels)
         dataloader = DataLoader(dataset, batch_size=256, shuffle=True)
 
-        # Step 3: 获取训练轮数
+        # Step 3: Get number of training epochs
         num_epochs = self.config.get("train_model_epochs")
         for param in self.global_model.parameters():
             param.requires_grad = True
         self.global_model.to(self.device).train()
-        # ✅ 添加优化器
+        # ✅ Add optimizer
         self.optimizer = torch.optim.Adam(self.global_model.parameters(), lr=self.config.get("learning_rate"))
-        # Step 4: 训练循环
+        # Step 4: Training loop
         total_loss = 0.0
 
 
         for epoch in range(num_epochs):
-            self.logger.info(f"Epoch [{epoch + 1}/{num_epochs}] 开始")
+            self.logger.info(f"Epoch [{epoch + 1}/{num_epochs}] started")
             epoch_loss = 0.0
 
             for batch_idx, (data, target) in enumerate(dataloader):
@@ -241,10 +241,10 @@ class Server:
 
             avg_epoch_loss = epoch_loss / len(dataloader)
             total_loss += avg_epoch_loss
-            self.logger.info(f"Epoch [{epoch + 1}/{num_epochs}] 完成，平均 Loss: {avg_epoch_loss:.4f}")
+            self.logger.info(f"Epoch [{epoch + 1}/{num_epochs}] completed, average Loss: {avg_epoch_loss:.4f}")
 
         avg_total_loss = total_loss / num_epochs
-        self.logger.info(f"collabDM 数据训练完成，总平均 Loss: {avg_total_loss:.4f}")
+        self.logger.info(f"collabDM data training completed, total average Loss: {avg_total_loss:.4f}")
 
         return avg_total_loss
     
@@ -266,4 +266,3 @@ class Server:
                 total += x.data.size()[0]
                 correct += (pred_label == target.data).sum().item()
         return correct / float(total)
-

@@ -5,38 +5,38 @@ import torch
 from torch.utils.data.sampler import SubsetRandomSampler
 
 
-#用于测量通讯开销的
+# For measuring communication overhead
 class Server:
-    #初始化函数
+    # Initialization function
     def __init__(
         self,
-        server_modules,config,logger,clients
+        server_modules, config, logger, clients
     ):
-       #server_modules是一个字典,config中存储了超参数，可以用config.get("param")提取
-       #在这里填写你要初始化的server模块,把server_modules["param"]存为self.变量，也把config存为self.config
-       return
+        # server_modules is a dictionary, config stores hyperparameters, accessible via config.get("param")
+        # Initialize your server modules here, store server_modules["param"] as self.variable, also store config as self.config
+        return
     
-    #选择若干个客户端进行更新
+    # Select several clients for updating
 
 
     def arrange_server_data_to_client():
-        server_data={}#server_data是一个字典
-        #可以用到self.config中的超参数
+        server_data = {}  # server_data is a dictionary
+        # Can use hyperparameters from self.config
 
-        #在这里填写你要准备给每个客户端的数据
+        # Prepare the data you want to send to each client here
 
         return server_data
     def merge_data(received_data_list):
-        merged_data={}
+        merged_data = {}
 
-        #在这里填写你合并的所有client的data的方式
-        #可以用到self.config中的超参数
+        # Define how to merge all client data here
+        # Can use hyperparameters from self.config
 
         return merged_data
     def process(merged_data):
         
-        #在这里填写你对合并后的data的处理方式
-        #可以用到self.config中的超参数
+        # Define how to process the merged data here
+        # Can use hyperparameters from self.config
 
         return
     
@@ -58,4 +58,3 @@ class Server:
                 total += x.data.size()[0]
                 correct += (pred_label == target.data).sum().item()
         return correct / float(total)
-

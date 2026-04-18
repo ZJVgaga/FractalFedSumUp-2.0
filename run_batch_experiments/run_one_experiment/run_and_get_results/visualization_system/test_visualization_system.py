@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试新的可视化系统
+Test the new visualization system
 """
 
 import torch
@@ -8,7 +8,7 @@ import numpy as np
 import os
 import sys
 
-# 添加父目录到路径
+# Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from image_tracker import ImageTracker
@@ -16,78 +16,78 @@ from client_visualizer import ClientVisualizer
 from server_visualizer import ServerVisualizer
 
 def test_image_tracker():
-    """测试ImageTracker类"""
-    print("测试ImageTracker...")
+    """Test the ImageTracker class"""
+    print("Testing ImageTracker...")
     
-    # 创建模拟配置
+    # Create mock configuration
     config = {
         "visualization_save_dir": "./test_visualizations",
         "compressed_image_size": 24,
         "Dataset": "CIFAR10"
     }
     
-    # 创建模拟数据集信息
+    # Create mock dataset information
     dataset_info = {
         "im_size": [32, 32],
         "channels": 3,
         "num_classes": 10
     }
     
-    # 创建模拟train_indices和train_labels
+    # Create mock train_indices and train_labels
     train_indices = list(range(100))
-    train_labels = [i % 10 for i in range(100)]  # 10个类别
+    train_labels = [i % 10 for i in range(100)]  # 10 classes
     
-    # 创建ImageTracker
+    # Create ImageTracker
     image_tracker = ImageTracker(config, dataset_info, train_indices, train_labels)
     
-    # 测试获取追踪索引
+    # Test getting tracked indices
     tracked_indices = image_tracker.get_tracked_indices()
-    print(f"追踪的图片索引: {tracked_indices}")
+    print(f"Tracked image indices: {tracked_indices}")
     
-    # 测试获取图片信息
+    # Test getting image information
     for idx, class_id in tracked_indices.items():
         info = image_tracker.get_image_info(idx)
-        print(f"图片 {idx} 信息: {info}")
+        print(f"Image {idx} info: {info}")
     
-    print("ImageTracker测试完成")
+    print("ImageTracker test completed")
     return image_tracker
 
 def test_client_visualizer():
-    """测试ClientVisualizer类"""
-    print("\n测试ClientVisualizer...")
+    """Test the ClientVisualizer class"""
+    print("\nTesting ClientVisualizer...")
     
-    # 创建模拟配置
+    # Create mock configuration
     config = {
         "visualization_save_dir": "./test_visualizations",
         "compressed_image_size": 24,
         "Dataset": "CIFAR10"
     }
     
-    # 创建模拟数据集信息
+    # Create mock dataset information
     dataset_info = {
         "im_size": [32, 32],
         "channels": 3,
         "num_classes": 10
     }
     
-    # 创建模拟train_indices和train_labels
+    # Create mock train_indices and train_labels
     train_indices = list(range(100))
     train_labels = [i % 10 for i in range(100)]
     
-    # 创建ImageTracker
+    # Create ImageTracker
     image_tracker = ImageTracker(config, dataset_info, train_indices, train_labels)
     
-    # 创建ClientVisualizer
+    # Create ClientVisualizer
     client_visualizer = ClientVisualizer(image_tracker, config)
     
-    # 创建模拟数据
+    # Create mock data
     batch_size = 10
     original_images = torch.randn(batch_size, 3, 32, 32)
     compressed_images = torch.randn(batch_size, 3, 24, 24)
     labels = torch.randint(0, 10, (batch_size,))
     client_indices = list(range(batch_size))
     
-    # 测试保存客户端可视化
+    # Test saving client visualization
     try:
         client_visualizer.save_client_visualization(
             original_images=original_images,
@@ -98,39 +98,39 @@ def test_client_visualizer():
             round_num=1,
             dataset=None
         )
-        print("ClientVisualizer测试完成")
+        print("ClientVisualizer test completed")
     except Exception as e:
-        print(f"ClientVisualizer测试失败: {e}")
+        print(f"ClientVisualizer test failed: {e}")
 
 def test_server_visualizer():
-    """测试ServerVisualizer类"""
-    print("\n测试ServerVisualizer...")
+    """Test the ServerVisualizer class"""
+    print("\nTesting ServerVisualizer...")
     
-    # 创建模拟配置
+    # Create mock configuration
     config = {
         "visualization_save_dir": "./test_visualizations",
         "compressed_image_size": 24,
         "Dataset": "CIFAR10"
     }
     
-    # 创建模拟数据集信息
+    # Create mock dataset information
     dataset_info = {
         "im_size": [32, 32],
         "channels": 3,
         "num_classes": 10
     }
     
-    # 创建模拟train_indices和train_labels
+    # Create mock train_indices and train_labels
     train_indices = list(range(100))
     train_labels = [i % 10 for i in range(100)]
     
-    # 创建ImageTracker
+    # Create ImageTracker
     image_tracker = ImageTracker(config, dataset_info, train_indices, train_labels)
     
-    # 创建ServerVisualizer
+    # Create ServerVisualizer
     server_visualizer = ServerVisualizer(image_tracker, config)
     
-    # 创建模拟追踪图片数据
+    # Create mock tracked image data
     tracked_images_data = {}
     for idx in range(5):
         tracked_images_data[idx] = {
@@ -139,35 +139,35 @@ def test_server_visualizer():
             "class_id": idx % 10
         }
     
-    # 测试添加epoch可视化
+    # Test adding epoch visualization
     server_visualizer.add_epoch_visualization(0, tracked_images_data)
     
-    # 测试保存服务器可视化
+    # Test saving server visualization
     try:
         server_visualizer.save_server_visualization(round_num=1)
-        print("ServerVisualizer测试完成")
+        print("ServerVisualizer test completed")
     except Exception as e:
-        print(f"ServerVisualizer测试失败: {e}")
+        print(f"ServerVisualizer test failed: {e}")
 
 def main():
-    """主测试函数"""
-    print("开始测试新的可视化系统...")
+    """Main test function"""
+    print("Starting test of the new visualization system...")
     
     try:
-        # 测试ImageTracker
+        # Test ImageTracker
         image_tracker = test_image_tracker()
         
-        # 测试ClientVisualizer
+        # Test ClientVisualizer
         test_client_visualizer()
         
-        # 测试ServerVisualizer
+        # Test ServerVisualizer
         test_server_visualizer()
         
-        print("\n所有测试完成！")
-        print("可视化结果保存在: ./test_visualizations/")
+        print("\nAll tests completed!")
+        print("Visualization results saved in: ./test_visualizations/")
         
     except Exception as e:
-        print(f"测试过程中出现错误: {e}")
+        print(f"Error occurred during testing: {e}")
         import traceback
         traceback.print_exc()
 

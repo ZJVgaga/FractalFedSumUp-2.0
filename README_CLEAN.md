@@ -12,7 +12,7 @@ This is an ultra-clean, anonymous version of the FractalFedSumUp 2.0 federated l
 
 ## Project Structure
 ```
-FractalFedSumUp_2.0/
+FractalFedSumUp/
 ├── __init__.py
 ├── README.md
 ├── LICENSE
@@ -37,3 +37,4 @@ See the main README.md for detailed usage instructions.
 
 ## License
 MIT License
+

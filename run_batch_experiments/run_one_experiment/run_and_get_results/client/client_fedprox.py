@@ -1,5 +1,4 @@
 import copy
-
 import io
 import torch
 from tqdm import tqdm
@@ -13,17 +12,17 @@ import time
 
 class Client:
     def __init__(
-            self,client_modules,config,logger,i,
+            self, client_modules, config, logger, i,
         ):
-         #client_modules是一个字典,config中存储了超参数，可以用config.get("param")提取
-       #在这里填写你要初始化的server模块,把server_modules["param"]存为self.变量，也把config存为self.config
+        # client_modules is a dictionary, config stores hyperparameters, can be extracted using config.get("param")
+        # Initialize your server modules here, store server_modules["param"] as self.variable, also store config as self.config
         self.config = config
         self.logger = logger
-        self.model_strategy = config.get("Model")  # 获取模型策略
+        self.model_strategy = config.get("Model")  # Get model strategy
         self.cid = i
         self.device = torch.device(config.get("device"))
         
-        # 从配置中获取训练相关参数
+        # Get training-related parameters from config
         self.real_batch_size = config.get("train_batch_size")
         self.model_epochs = config.get("train_model_epochs")
  
@@ -32,36 +31,34 @@ class Client:
         self.test_indices = client_modules["target_test_indices"]
         self.classes = client_modules["client_classes"][i]
         self.dataset_info = client_modules["dataset_info"]
-        self.client_indices = client_modules['client_indices'][i]  # 当前客户端的数据索引
+        self.client_indices = client_modules['client_indices'][i]  # Data indices for the current client
         self.test_loader = DataLoader(self.test_set, sampler=SubsetRandomSampler(self.test_indices), batch_size=1, shuffle=False, num_workers=0, pin_memory=True)
         self.global_model = None
         self.fedprox_mu = self.config.get(f"fedprox_mu")
-        self.old_global_model=None
+        self.old_global_model = None
         return
         
-    def receive_data_from_server(self,server_data):
-        
-        #在这里填写接收到的server_data怎么处理
-         #可以用到self.config中的超参数
-        self.logger.info(f"客户端 {self.cid} 正在接收服务器数据...")
-        #FedProx专有部分
+    def receive_data_from_server(self, server_data):
+        # Specify here how to process the received server_data
+        # Can use hyperparameters from self.config
+        self.logger.info(f"Client {self.cid} is receiving server data...")
+        # FedProx specific part
       
-            #保存上一步的模型以进行对比
+        # Save the previous step's model for comparison
         if not self.global_model is None:
-            self.old_global_model = copy.deepcopy(self.global_model)  # 保存旧模型
+            self.old_global_model = copy.deepcopy(self.global_model)  # Save old model
         else:
-            self.old_global_model=None
-        # 接收全局模型
+            self.old_global_model = None
+        # Receive global model
         if 'global_model' in server_data:
             self.global_model = copy.deepcopy(server_data['global_model'])
             self.global_model.eval()
-            self.logger.info(f"客户端 {self.cid} 已接收全局模型")
+            self.logger.info(f"Client {self.cid} has received the global model")
         
         
-        self.logger.info(f"客户端 {self.cid} 服务器数据接收完成")
+        self.logger.info(f"Client {self.cid} server data reception completed")
 
     def process(self):
-
         dataloader = DataLoader(self.train_set, sampler=SubsetRandomSampler(self.client_indices), batch_size=256, shuffle=False, num_workers=0, pin_memory=True)
         self.global_model.train()
  
@@ -103,13 +100,11 @@ class Client:
         return 
 
     def send_data_to_server(self):
-        
-        #要传输的数据用字典表示
+        # Data to be transmitted is represented by a dictionary
         
         data_for_server = {
-                
                 'client_model': self.global_model,
             }
-         #可以用到self.config中的超参数
+        # Can use hyperparameters from self.config
         
-        return  data_for_server
+        return data_for_server

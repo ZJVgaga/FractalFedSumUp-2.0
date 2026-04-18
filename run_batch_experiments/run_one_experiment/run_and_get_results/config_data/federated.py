@@ -1,5 +1,5 @@
 """
-联邦学习配置模块
+Federated Learning Configuration Module
 """
 
 FEDERATED_CONFIG = {
@@ -49,7 +49,7 @@ FEDERATED_CONFIG = {
             "content": "FedSD2C",
             "type": "value",
             "children": [
-                {"content": "sd2c_num_crop", "type": "key", "children": [{"content": 1, "type": "value"}]},  # 根据 '--fedsd2c_num_crop' 参数
+                {"content": "sd2c_num_crop", "type": "key", "children": [{"content": 1, "type": "value"}]},  # Based on the '--fedsd2c_num_crop' parameter
                 {"content": "sd2c_foulier_alpha", "type": "key", "children": [{"content": 0.1, "type": "value"}]},
                 {"content": "sd2c_iterations", "type": "key", "children": [{"content": 50, "type": "value"}]},
             ]
@@ -58,8 +58,8 @@ FEDERATED_CONFIG = {
             "content": "FedSumUp",
             "type": "value",
             "children": [
-                {"content": "sumup_num_crop", "type": "key", "children": [{"content": 1, "type": "value"}]},  # 根据 '--fedsd2c_num_crop' 参数
-                # 新流程参数：压缩图像大小（替代原来的k参数）
+                {"content": "sumup_num_crop", "type": "key", "children": [{"content": 1, "type": "value"}]},  # Based on the '--fedsd2c_num_crop' parameter
+                # New process parameter: compressed image size (replaces the original k parameter)
                 {"content": "compressed_image_size", "type": "key", "children": [{"content": 24, "type": "value"}]},
                 {"content": "data_representation_ratio", "type": "key", "children": [{"content": 0.5, "type": "value"}]},
                 {"content": "sumup_utility_ratio", "type": "key", "children": [{"content": 1, "type": "value"}]},

@@ -1,11 +1,11 @@
 """
-模型配置模块
+Model Configuration Module
 """
 
 MODEL_CONFIG = {
     "content": "Model",
     "type": "key",
-    "choice": "ConvNet",  # 默认选择 ConvNet 模型
+    "choice": "ConvNet",  # Default selection is the ConvNet model
     "children": [
         {
             "content": "ConvNet",

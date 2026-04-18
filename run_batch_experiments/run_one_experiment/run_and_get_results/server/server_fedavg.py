@@ -11,22 +11,22 @@ from tqdm import tqdm
 from torch.utils.data.sampler import SubsetRandomSampler
 
 
-#用于测量通讯开销的
+# For measuring communication overhead
 class Server:
-    #初始化函数
+    # Initialization function
     def __init__(
         self,
         server_modules,config,logger,clients
     ):
-       #server_modules是一个字典,config中存储了超参数，可以用config.get("param")提取
-       #在这里填写你要初始化的server模块,把server_modules["param"]存为self.变量，也把config存为self.config
+       # server_modules is a dictionary, config stores hyperparameters, can be extracted using config.get("param")
+       # Here, initialize your server modules, store server_modules["param"] as self.variable, also store config as self.config
         self.config = config
         self.logger = logger
         self.device= server_modules["device"]
         self.global_model = server_modules["global_model"].to(self.config.get("device"))
         self.model_strategy = config.get("Model")
         self.fed_strategy = config.get("Federated_Learning_Config")
-        #self.safety_strategy = config.get("Safety-Config")
+        # self.safety_strategy = config.get("Safety-Config")
         self.communication_rounds = config.get("communication_rounds")
         self.join_ratio = config.get("join_ratio")
         self.eval_gap = config.get("eval_gap")
@@ -38,16 +38,16 @@ class Server:
       
         return
      
-    #选择若干个客户端进行更新
+    # Select several clients for updating
 
 
     def arrange_server_data_to_client(self):
         server_data = {
             "global_model": self.global_model.state_dict()
-        }#server_data是一个字典
-        #可以用到self.config中的超参数
+        } # server_data is a dictionary
+        # Can use hyperparameters from self.config
 
-        #在这里填写你要准备给每个客户端的数据
+        # Here, fill in the data you want to prepare for each client
 
         return server_data
     
@@ -55,8 +55,8 @@ class Server:
     def merge_data(self,received_data_list):
         merged_data={}
 
-        #在这里填写你合并的所有client的data的方式
-        #可以用到self.config中的超参数
+        # Here, fill in how you merge all client data
+        # Can use hyperparameters from self.config
         client_models = [data["client_model"] for data in received_data_list]        
         client_counts = [1] * len(client_models)
         total_num = sum(client_counts)
@@ -75,8 +75,8 @@ class Server:
 
     def process(self,merged_data):
         
-        #在这里填写你对合并后的data的处理方式
-        #可以用到self.config中的超参数
+        # Here, fill in how you process the merged data
+        # Can use hyperparameters from self.config
 
         return
     
@@ -99,4 +99,3 @@ class Server:
                 total += x.data.size()[0]
                 correct += (pred_label == target.data).sum().item()
         return correct / float(total)
-

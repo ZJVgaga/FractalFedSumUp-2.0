@@ -1,5 +1,5 @@
 """
-调度配置模块
+Scheduling Configuration Module
 """
 
 SCHEDULE_CONFIG = {
@@ -13,8 +13,8 @@ SCHEDULE_CONFIG = {
         {"content": "join_ratio", "type": "key", "children": [{"content": 1.0, "type": "value"}]},
         {"content": "eval_gap", "type": "key", "children": [{"content": 1, "type": "value"}]},
         {"content": "seed", "type": "key", "children": [{"content": 520, "type": "value"}]},
-        {"content": "compute_budget_per_client_per_round", "type": "key", "children": [{"content": 3e9, "type": "value"}]},  # 每个客户端每轮的计算预算（浮点运算次数）
-        {"content": "enable_compute_budget", "type": "key", "children": [{"content": True, "type": "value"}]},  # 是否启用计算预算
-        {"content": "budget_check_frequency", "type": "key", "children": [{"content": 1, "type": "value"}]}  # 预算检查频率（每N个epoch检查一次）
+        {"content": "compute_budget_per_client_per_round", "type": "key", "children": [{"content": 3e9, "type": "value"}]},  # Computation budget per client per round (number of floating-point operations)
+        {"content": "enable_compute_budget", "type": "key", "children": [{"content": True, "type": "value"}]},  # Whether to enable computation budget
+        {"content": "budget_check_frequency", "type": "key", "children": [{"content": 1, "type": "value"}]}  # Budget check frequency (check every N epochs)
     ]
 }

@@ -1,5 +1,5 @@
 """
-数据配置模块
+Data Configuration Module
 """
 
 DATA_CONFIG = {
@@ -25,7 +25,7 @@ DATA_CONFIG = {
             "children": [
                 {"content": "alpha", "type": "key", "children": [{"content": 0.5, "type": "value"}]},
                 {"content": "batch_size", "type": "key", "children": [{"content": 256, "type": "value"}]},
-                {"content": "images_per_class", "type": "key", "children": [{"content": 30, "type": "value"}]},  # 数据合成的基本参数值
+                {"content": "images_per_class", "type": "key", "children": [{"content": 30, "type": "value"}]},  # Basic parameter value for data synthesis
                 {"content": "hyperparameter_experiment", "type": "key", "children": [{"content": False, "type": "value"}]},
             ]
         }

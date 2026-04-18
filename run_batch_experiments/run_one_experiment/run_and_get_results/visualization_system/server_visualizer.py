@@ -8,50 +8,50 @@ from .image_tracker import ImageTracker
 
 class ServerVisualizer:
     """
-    服务器可视化器：负责服务器端的可视化
+    Server Visualizer: Responsible for server-side visualization
     """
     def __init__(self, image_tracker, config):
         """
-        初始化服务器可视化器
+        Initialize the server visualizer
         
         Parameters:
-        - image_tracker: 图片追踪器实例
-        - config: 配置字典
+        - image_tracker: Image tracker instance
+        - config: Configuration dictionary
         """
         self.image_tracker = image_tracker
         self.config = config
         self.compressed_size = config.get("compressed_image_size", 24)
         
-        # 存储每个epoch的可视化数据
+        # Store visualization data for each epoch
         self.epoch_visualizations = {}
     
     def add_epoch_visualization(self, epoch, tracked_images_data):
         """
-        添加一个epoch的可视化数据
+        Add visualization data for one epoch
         
         Parameters:
-        - epoch: epoch编号
-        - tracked_images_data: 字典，包含追踪图片的数据
+        - epoch: Epoch number
+        - tracked_images_data: Dictionary containing tracked image data
             {index: {"original": original_tensor, "compressed": compressed_tensor, "class_id": class_id}}
         """
         self.epoch_visualizations[epoch] = tracked_images_data
     
     def save_server_visualization(self, round_num):
         """
-        保存服务器端所有epoch的可视化结果
+        Save visualization results for all epochs on the server side
         
         Parameters:
-        - round_num: 轮次
+        - round_num: Round number
         """
         if not self.epoch_visualizations:
-            print(f"服务器端第 {round_num} 轮没有可视化数据")
+            print(f"No visualization data for round {round_num} on server side")
             return
         
-        # 对每一张追踪的图片
+        # For each tracked image
         tracked_indices = self.image_tracker.get_tracked_indices()
         
         for index, class_id in tracked_indices.items():
-            # 收集该图片在所有epoch的数据
+            # Collect data for this image across all epochs
             all_epochs_data = []
             
             for epoch in sorted(self.epoch_visualizations.keys()):
@@ -62,62 +62,62 @@ class ServerVisualizer:
             if not all_epochs_data:
                 continue
             
-            # 保存该图片的可视化结果
+            # Save visualization results for this image
             self._save_single_image_server_visualization(
                 index, class_id, round_num, all_epochs_data
             )
         
-        # 清空当前轮的缓存
+        # Clear cache for current round
         self.epoch_visualizations.clear()
     
     def _save_single_image_server_visualization(self, index, class_id, round_num, all_epochs_data):
         """
-        保存单张图片在服务器端的可视化结果
+        Save server-side visualization results for a single image
         
         Parameters:
-        - index: 图片索引
-        - class_id: 类别ID
-        - round_num: 轮次
-        - all_epochs_data: 列表，包含(epoch, data)元组
+        - index: Image index
+        - class_id: Class ID
+        - round_num: Round number
+        - all_epochs_data: List containing (epoch, data) tuples
         """
-        # 获取原始图像尺寸（从第一个epoch的数据）
+        # Get original image dimensions (from first epoch's data)
         first_epoch_data = all_epochs_data[0][1]
         orig_img = first_epoch_data["original"]
         orig_h, orig_w = orig_img.shape[2], orig_img.shape[3]
         
-        # 准备所有行的图像数据
+        # Prepare image data for all rows
         all_rows_images = []
         all_rows_titles = []
         
-        # 对每个epoch
+        # For each epoch
         for epoch, data in all_epochs_data:
             orig_img_epoch = data["original"]
             comp_img_epoch = data["compressed"]
             
-            # 获取压缩图像尺寸
+            # Get compressed image dimensions
             comp_h, comp_w = comp_img_epoch.shape[2], comp_img_epoch.shape[3]
             
-            # 创建三个可视化图像
-            # 1. 原始图像上采样到32x32（用于显示）- 使用最近点插值
+            # Create three visualization images
+            # 1. Original image upsampled to 32x32 (for display) - using nearest neighbor interpolation
             upsampled_bilinear = torch.nn.functional.interpolate(
                 orig_img_epoch,
                 size=(32, 32),
                 mode='bilinear',
-                align_corners=False  # 最近点插值通常不需要align_corners
+                align_corners=False  # Nearest neighbor interpolation typically doesn't need align_corners
             )
             
-            # 2. 编码器压缩的图像（保持压缩尺寸）
+            # 2. Encoder compressed image (maintain compressed size)
             compressed = comp_img_epoch.clone()
             
-            # 3. 编码器压缩的图像上采样到32x32 - 使用最近点插值
+            # 3. Encoder compressed image upsampled to 32x32 - using nearest neighbor interpolation
             compressed_upsample = torch.nn.functional.interpolate(
                 comp_img_epoch,
                 size=(32, 32),
                 mode='bilinear',
-                align_corners=False  # 最近点插值通常不需要align_corners
+                align_corners=False  # Nearest neighbor interpolation typically doesn't need align_corners
             )
             
-            # 添加到行数据
+            # Add to row data
             all_rows_images.extend([upsampled_bilinear, compressed, compressed_upsample])
             all_rows_titles.extend([
                 f"Epoch {epoch}: Bilinear Upsample\nSize: 32x32",
@@ -125,17 +125,17 @@ class ServerVisualizer:
                 f"Epoch {epoch}: Compressed Upsample\nSize: 32x32"
             ])
         
-        # 计算总行数（每个epoch一行）
+        # Calculate total number of rows (one row per epoch)
         num_epochs = len(all_epochs_data)
         
-        # 创建图形（多行三列）
+        # Create figure (multiple rows, three columns)
         fig, axes = plt.subplots(num_epochs, 3, figsize=(15, 5 * num_epochs))
         
-        # 如果只有一个epoch，axes的形状需要调整
+        # If only one epoch, adjust axes shape
         if num_epochs == 1:
             axes = [axes]
         
-        # 填充每个epoch的图像
+        # Fill images for each epoch
         for row in range(num_epochs):
             for col in range(3):
                 ax = axes[row][col] if num_epochs > 1 else axes[col]
@@ -145,43 +145,43 @@ class ServerVisualizer:
                     img = all_rows_images[img_idx]
                     title = all_rows_titles[img_idx]
                     
-                    # 处理图像数据
+                    # Process image data
                     if isinstance(img, torch.Tensor):
                         img = img.detach().cpu().numpy()
                     
-                    # 调整图像维度顺序
+                    # Adjust image dimension order
                     if len(img.shape) == 4:  # [batch, channels, height, width]
-                        img = img[0]  # 取第一张图像
+                        img = img[0]  # Take first image
                     
                     if len(img.shape) == 3:
-                        if img.shape[0] == 1:  # 单通道图像
+                        if img.shape[0] == 1:  # Single channel image
                             img = img[0]  # [height, width]
-                        elif img.shape[0] == 3:  # RGB图像
+                        elif img.shape[0] == 3:  # RGB image
                             img = img.transpose(1, 2, 0)  # [height, width, channels]
                     
-                    # 显示图像
-                    if len(img.shape) == 2:  # 灰度图像
+                    # Display image
+                    if len(img.shape) == 2:  # Grayscale image
                         ax.imshow(img, cmap='gray')
-                    else:  # RGB图像
-                        # 归一化到[0, 1]范围
+                    else:  # RGB image
+                        # Normalize to [0, 1] range
                         img = (img - img.min()) / (img.max() - img.min() + 1e-8)
                         ax.imshow(img)
                     
                     ax.set_title(title, fontsize=10)
                     ax.axis('off')
         
-        # 只保存总的汇总图像，不保存每个epoch的单独图像
-        # 获取保存路径（不使用epoch参数）
+        # Only save the overall summary image, not individual epoch images
+        # Get save path (without using epoch parameter)
         save_dir = self.image_tracker.get_save_path(index, class_id, round_num, is_server=True)
         os.makedirs(save_dir, exist_ok=True)
         
-        # 保存汇总图像
+        # Save summary image
         save_path = os.path.join(save_dir, f"server_all_epochs.png")
         plt.tight_layout()
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
         plt.close(fig)
         
-        # 保存汇总元数据
+        # Save summary metadata
         metadata = {
             "index": int(index),
             "class_id": int(class_id),
@@ -197,4 +197,4 @@ class ServerVisualizer:
         with open(metadata_path, 'w') as f:
             json.dump(metadata, f, indent=2)
         
-        print(f"服务器端保存了索引 {index} (类别 {class_id}) 的可视化结果到: {save_dir}")
+        print(f"Server-side visualization results for index {index} (class {class_id}) saved to: {save_dir}")

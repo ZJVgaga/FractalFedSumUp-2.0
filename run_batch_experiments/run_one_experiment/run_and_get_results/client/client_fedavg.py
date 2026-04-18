@@ -8,10 +8,10 @@ from tqdm import tqdm
 from torch.nn.functional import softmax
 from torch.utils.data import DataLoader, SubsetRandomSampler
 
-# 自定义模块
+# Custom modules
 from .DatasetNonIIDClass.DatasetNonIIDClass import PerLabelDatasetNonIID
 
-# Opacus 差分隐私相关
+# Opacus differential privacy related
 from opacus import PrivacyEngine
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 
@@ -22,7 +22,7 @@ from tqdm import tqdm
 import copy
 from opacus import PrivacyEngine
 
-# 自定义DP工具
+# Custom DP tools
 from ..dp_tools import DPClipper
 
 
@@ -34,11 +34,11 @@ class Client:
         self.device = th.device(config.get("device"))
         self.times = 0
 
-        # 训练参数
+        # Training parameters
         self.real_batch_size = config.get("train_batch_size")
         self.model_epochs = config.get("train_model_epochs")
 
-        # 数据相关
+        # Data related
         self.train_set = client_modules["dst_train"]
         self.test_set = client_modules["dst_test"]
         self.test_indices = client_modules["target_test_indices"]
@@ -54,7 +54,7 @@ class Client:
             pin_memory=True
         )
 
-        # 模型相关（初始为空）
+        # Model related (initially empty)
         self.global_model = copy.deepcopy(client_modules["global_model"])
         self.global_model.to(self.device)
         self.global_model.train()
@@ -62,34 +62,34 @@ class Client:
         self.dataloader = None
         self.privacy_engine = None
         
-        # DP相关
+        # DP related
         self.dp_mechanism = config.get("dp_mechanism", "no_dp")
         self.use_dp = self.dp_mechanism != "no_dp"
         self.dp_clipper = None
         
         if self.use_dp:
-            # 使用自定义DP工具
+            # Use custom DP tools
             self.dp_clipper = DPClipper(config, logger, self.device)
-            self.logger.info(f"客户端 {self.cid} 使用自定义DP机制: {self.dp_mechanism}")
+            self.logger.info(f"Client {self.cid} uses custom DP mechanism: {self.dp_mechanism}")
         else:
-            self.logger.info(f"客户端 {self.cid} 不使用DP机制")
+            self.logger.info(f"Client {self.cid} does not use DP mechanism")
 
     def receive_data_from_server(self, server_data):
 
         if 'global_model' in server_data:
-            new_state_dict = server_data['global_model']  # OrderedDict，不含 Opacus 包装
+            new_state_dict = server_data['global_model']  # OrderedDict, without Opacus wrapper
 
-            # 直接加载到整个模型
+            # Load directly into the entire model
             self.global_model.load_state_dict(new_state_dict)
             self.global_model.train()
 
-            self.logger.info(f"客户端 {self.cid} 已接收并更新全局模型参数")
+            self.logger.info(f"Client {self.cid} has received and updated global model parameters")
 
-        self.logger.info(f"客户端 {self.cid} 服务器数据接收完成")
+        self.logger.info(f"Client {self.cid} server data reception completed")
         
     def _setup_dataloader_and_optimizer(self):
         """
-        设置数据加载器和优化器
+        Set up data loader and optimizer
         """
         if self.dataloader is None or self.optimizer is None:
             self.dataloader = DataLoader(
@@ -111,7 +111,7 @@ class Client:
     def process(self):
         self.times += 1
 
-        # 设置数据加载器和优化器
+        # Set up data loader and optimizer
         self._setup_dataloader_and_optimizer()
 
         self.global_model.train()
@@ -129,7 +129,7 @@ class Client:
                 loss = loss_function(pred, target)
                 loss.backward()
                 
-                # 应用DP机制（如果启用）
+                # Apply DP mechanism (if enabled)
                 if self.dp_clipper is not None:
                     self.dp_clipper.apply_dp_to_gradients(
                         self.global_model, 
@@ -140,7 +140,7 @@ class Client:
 
                 total_loss += loss.item()
 
-                # 🔥 及时删除中间变量并清空缓存
+                # 🔥 Promptly delete intermediate variables and clear cache
                 del x, target, pred, loss
                 if self.device.type == 'cuda':
                     torch.cuda.empty_cache()
@@ -148,11 +148,11 @@ class Client:
         avg_loss = total_loss / (len(self.dataloader) * self.model_epochs)
         self.logger.info(f'Client {self.cid} epoch avg loss = {avg_loss}')
         
-        # 🔥 在整个 epoch 结束后也清空一次缓存
+        # 🔥 Also clear cache once after the entire epoch ends
         if self.device.type == 'cuda':
             torch.cuda.empty_cache()
         
-        # 打印隐私预算信息
+        # Print privacy budget information
         if self.dp_clipper is not None:
             privacy_info = self.dp_clipper.get_privacy_budget()
             self.logger.info(f"Client {self.cid} | {privacy_info}")
@@ -161,9 +161,9 @@ class Client:
    
     def send_data_to_server(self):
         """
-        发送给 server 的模型参数
+        Model parameters sent to the server
         """
-        # 使用原始模型的state_dict
+        # Use the original model's state_dict
         original_state_dict = self.global_model.state_dict()
 
         data_for_server = {

@@ -1,6 +1,6 @@
 """
-差分隐私工具模块
-集成dp_files中的DP机制
+Differential Privacy Tool Module
+
 """
 
 import torch
@@ -11,7 +11,7 @@ import copy
 
 def params_norm(params, norm_type: float = 2.0, error_if_nonfinite: bool = False) -> torch.Tensor:
     """
-    计算参数张量的范数
+    Calculate the norm of parameter tensors
     """
     norm_type = float(norm_type)
     if len(params) == 0:
@@ -34,7 +34,7 @@ def params_norm(params, norm_type: float = 2.0, error_if_nonfinite: bool = False
 
 def proj_by_norm_(parameters, min_norm, max_norm, norm_type=2):
     """
-    根据范数对参数进行投影（裁剪）
+    Project (clip) parameters based on norm
     """
     # 1. calc grad norm
     total_norm, _ = params_norm(parameters, norm_type=norm_type)
@@ -56,14 +56,14 @@ def proj_by_norm_(parameters, min_norm, max_norm, norm_type=2):
 
 def gaussian_noise(data_shape, sigma, device=None):
     """
-    生成高斯噪声
+    Generate Gaussian noise
     """
     return torch.normal(0, sigma, data_shape).to(device)
 
 
 def laplace_noise(data_shape, scale, device=None):
     """
-    生成拉普拉斯噪声
+    Generate Laplace noise
     """
     m = torch.distributions.laplace.Laplace(torch.tensor(0.0), torch.tensor(scale))
     return m.sample(data_shape).to(device)
@@ -71,9 +71,9 @@ def laplace_noise(data_shape, scale, device=None):
 
 def dp_scale_laplace(eps, clip, lr):
     """
-    计算拉普拉斯噪声的尺度
+    Calculate the scale for Laplace noise
     """
-    # 确保 eps 是浮点数
+    # Ensure eps is a float
     eps = float(eps)
     sens = 2 * clip * lr
     scale = sens / eps
@@ -81,19 +81,16 @@ def dp_scale_laplace(eps, clip, lr):
 
 
 def add_dp_noise_to_gradients(model, clip, eps, mechanism='laplace', clip_level='batch', element_wise_rand=True, lr=0.01):
-    """
-    向模型梯度添加差分隐私噪声
-    基于dp_files/fl/clientDPClip.py中的实现
-    """
+
     assert mechanism in ['laplace', 'gaussian']
     assert clip_level in ['sample', 'batch']
     
-    # 确保 eps 是浮点数
+    # Ensure eps is a float
     eps = float(eps)
     
     clip_norm_type = 1 if mechanism == 'laplace' else 2
     
-    # 收集所有梯度
+    # Collect all gradients
     gradients = []
     for param in model.parameters():
         if param.grad is not None:
@@ -102,14 +99,14 @@ def add_dp_noise_to_gradients(model, clip, eps, mechanism='laplace', clip_level=
     if not gradients:
         return
     
-    # 梯度裁剪
+    # Gradient clipping
     if clip_level == 'sample':
-        # 这里简化处理，实际应该按样本裁剪
+        # Simplified handling here; actual implementation should clip per sample
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip, norm_type=clip_norm_type)
     else:
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip, norm_type=clip_norm_type)
     
-    # 添加噪声
+    # Add noise
     sens = 2 * clip * lr
     scale = sens / eps
     
@@ -131,8 +128,8 @@ def add_dp_noise_to_gradients(model, clip, eps, mechanism='laplace', clip_level=
 
 class DPClipper:
     """
-    差分隐私裁剪器
-    封装DP机制，便于在FedAvg中使用
+    Differential Privacy Clipper
+    Encapsulates DP mechanisms for easy use in FedAvg
     """
     
     def __init__(self, config, logger, device):
@@ -140,7 +137,7 @@ class DPClipper:
         self.logger = logger
         self.device = device
         
-        # DP参数 - 确保数值类型正确
+        # DP parameters - ensure correct numeric types
         self.dp_mechanism = config.get("dp_mechanism", "no_dp")
         self.dp_epsilon = float(config.get("dp_epsilon", 5.0))
         self.dp_delta = float(config.get("dp_delta", 1e-5))
@@ -149,12 +146,12 @@ class DPClipper:
         self.dp_clip_level = config.get("dp_clip_level", "batch")
         self.dp_element_wise_rand = config.get("dp_element_wise_rand", True)
         
-        self.logger.info(f"DPClipper初始化: mechanism={self.dp_mechanism}, epsilon={self.dp_epsilon}, "
+        self.logger.info(f"DPClipper initialized: mechanism={self.dp_mechanism}, epsilon={self.dp_epsilon}, "
                         f"clip={self.dp_clip}, clip_level={self.dp_clip_level}")
     
     def apply_dp_to_gradients(self, model, lr=0.01):
         """
-        应用DP到模型梯度
+        Apply DP to model gradients
         """
         if self.dp_mechanism == "no_dp":
             return
@@ -164,7 +161,7 @@ class DPClipper:
         elif self.dp_mechanism == "gaussian":
             mechanism = 'gaussian'
         else:
-            self.logger.warning(f"未知的DP机制: {self.dp_mechanism}, 使用laplace作为默认")
+            self.logger.warning(f"Unknown DP mechanism: {self.dp_mechanism}, using laplace as default")
             mechanism = 'laplace'
         
         add_dp_noise_to_gradients(
@@ -179,9 +176,9 @@ class DPClipper:
     
     def get_privacy_budget(self):
         """
-        获取隐私预算信息
+        Get privacy budget information
         """
         if self.dp_mechanism == "no_dp":
-            return "无DP保护"
+            return "No DP protection"
         
         return f"ε={self.dp_epsilon}, δ={self.dp_delta}, clip={self.dp_clip}"

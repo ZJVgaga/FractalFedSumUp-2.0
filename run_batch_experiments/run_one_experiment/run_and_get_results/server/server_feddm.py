@@ -9,35 +9,35 @@ from tqdm import tqdm
 
 
 from torch.utils.data.sampler import SubsetRandomSampler
-#事实上
+# In fact
 
-#用于测量通讯开销的
+# Used to measure communication overhead
 class Server:
-    #初始化函数
-    def __init__(self, basic_modules, config, logger,clients):
+    # Initialization function
+    def __init__(self, basic_modules, config, logger, clients):
         random.seed(config.get("seed"))
         """
-        服务器初始化
-        参数：
-        - basic_modules: 基本模块字典
-        - config: 配置字典
+        Server initialization
+        Parameters:
+        - basic_modules: Basic modules dictionary
+        - config: Configuration dictionary
         """
-        self.clients=clients
+        self.clients = clients
         self.logger = logger
-        self.logger.info("正在初始化服务器...")
-        self.config=config
+        self.logger.info("Initializing server...")
+        self.config = config
         
-        # 模型相关
+        # Model related
         self.global_model = copy.deepcopy(basic_modules['global_model']).to(basic_modules['device'])
         self.model_strategy = config.get("Model")
-        self.logger.info(f"服务器模型初始化完成: {self.model_strategy}")
+        self.logger.info(f"Server model initialization completed: {self.model_strategy}")
         
-        # 调度相关
+        # Scheduling related
         
         self.join_ratio = config.get("join_ratio")
         
            
-        # 数据相关
+        # Data related
         self.test_set = basic_modules['dst_test']
         self.test_loader = DataLoader(
             self.test_set,
@@ -48,49 +48,49 @@ class Server:
             pin_memory=True
         )
         
-        self.logger.info("服务器测试数据加载完成")
+        self.logger.info("Server test data loading completed")
         
-        # 设备相关
+        # Device related
         self.device = basic_modules['device']
         
-        # 联邦学习策略
+        # Federated learning strategy
         self.fed_strategy = config.get("Federated_Learning_Config")
-        self.logger.info(f"服务器使用联邦策略: {self.fed_strategy}")
+        self.logger.info(f"Server using federated strategy: {self.fed_strategy}")
         
-        self.logger.info("服务器初始化完成")
+        self.logger.info("Server initialization completed")
 
     def arrange_server_data_to_client(self):
         """
-        准备发送给客户端的数据
-        返回：
-        - server_data: 要发送的数据字典
+        Prepare data to send to clients
+        Returns:
+        - server_data: Dictionary of data to send
         """
-        self.logger.info("服务器准备发送数据给客户端...")
+        self.logger.info("Server preparing to send data to clients...")
         
         server_data = {}
         
-        # 发送全局模型
+        # Send global model
         server_data['global_model'] = self.global_model
-        self.logger.info("已准备全局模型数据")
+        self.logger.info("Global model data prepared")
         
         
         
-        self.logger.info("服务器数据准备完成")
+        self.logger.info("Server data preparation completed")
         return server_data
 
     def merge_data(self, received_data_list):
         """
-        合并从客户端接收的数据
-        参数：
-        - received_data_list: 从客户端接收的数据列表
-        返回：
-        - merged_data: 合并后的数据字典
+        Merge data received from clients
+        Parameters:
+        - received_data_list: List of data received from clients
+        Returns:
+        - merged_data: Dictionary of merged data
         """
-        self.logger.info("服务器开始合并客户端数据...")
+        self.logger.info("Server starting to merge client data...")
         
         merged_data = {}
         
-        # 如果是FedDM策略，合并合成数据
+        # If using FedDM strategy, merge synthetic data
         if self.fed_strategy == "FedDM":
             synthetic_images = []
             synthetic_labels = []
@@ -103,29 +103,29 @@ class Server:
             if synthetic_images:
                 merged_data['synthetic_images'] = torch.cat(synthetic_images, dim=0).cpu()
                 merged_data['synthetic_labels'] = torch.cat(synthetic_labels, dim=0)
-                self.logger.info(f"合并后合成数据: 图像形状 {merged_data['synthetic_images'].shape}, 标签形状 {merged_data['synthetic_labels'].shape}")
+                self.logger.info(f"Merged synthetic data: Image shape {merged_data['synthetic_images'].shape}, Label shape {merged_data['synthetic_labels'].shape}")
             else:
-                self.logger.info("警告: 没有接收到有效的合成数据")
+                self.logger.info("Warning: No valid synthetic data received")
         
         
-        self.logger.info("服务器数据合并完成")
+        self.logger.info("Server data merging completed")
         return merged_data
 
     def process(self, merged_data):
-        config=self.config
+        config = self.config
         random.seed(self.config.get("seed"))
         """
-        处理合并后的数据
-        参数：
-        - merged_data: 合并后的数据字典
+        Process merged data
+        Parameters:
+        - merged_data: Dictionary of merged data
         """
-        self.logger.info("服务器开始处理合并数据...")
+        self.logger.info("Server starting to process merged data...")
         
-        # 如果是FedDM策略，使用合成数据训练全局模型
+        # If using FedDM strategy, train global model with synthetic data
         if self.fed_strategy == "FedDM" and 'synthetic_images' in merged_data and 'synthetic_labels' in merged_data:
-            self.logger.info("使用合成数据训练全局模型...")
+            self.logger.info("Training global model with synthetic data...")
             
-            # 创建数据集和数据加载器
+            # Create dataset and data loader
             synthetic_dataset = TensorDataset(merged_data['synthetic_images'], merged_data['synthetic_labels'])
             batch_size = min(config.get("train_batch_size"), len(synthetic_dataset))
             synthetic_dataloader = DataLoader(
@@ -135,7 +135,7 @@ class Server:
                 num_workers=0
             )
             
-            # 训练配置
+            # Training configuration
             self.global_model.train()
             model_optimizer = torch.optim.SGD(
                 self.global_model.parameters(),
@@ -146,7 +146,7 @@ class Server:
             loss_function = torch.nn.CrossEntropyLoss()
             total_loss = 0
             
-            # 训练过程
+            # Training process
             for epoch in range(config.get("train_model_epochs")):
                 for x, target in synthetic_dataloader:
                     x, target = x.to(self.device), target.to(self.device)
@@ -157,11 +157,11 @@ class Server:
                     model_optimizer.step()
                     total_loss += loss.item()
                 
-                self.logger.info(f"全局模型训练 epoch {epoch+1}/{config.get('train_model_epochs')}, 损失: {loss.item():.4f}")
+                self.logger.info(f"Global model training epoch {epoch+1}/{config.get('train_model_epochs')}, Loss: {loss.item():.4f}")
             
-            self.logger.info(f"全局模型训练完成，平均损失: {total_loss/config.get('train_model_epochs'):.4f}")
+            self.logger.info(f"Global model training completed, Average loss: {total_loss/config.get('train_model_epochs'):.4f}")
         
-        self.logger.info("服务器数据处理完成")
+        self.logger.info("Server data processing completed")
     
 
     def select_clients(self):
@@ -181,4 +181,3 @@ class Server:
                 total += x.data.size()[0]
                 correct += (pred_label == target.data).sum().item()
         return correct / float(total)
-

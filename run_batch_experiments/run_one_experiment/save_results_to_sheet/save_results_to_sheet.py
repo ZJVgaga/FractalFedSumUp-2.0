@@ -9,16 +9,16 @@ from openpyxl.utils import get_column_letter, column_index_from_string
 
 def clone_sheet(sheet: Worksheet) -> Worksheet:
     """
-    创建一个现有工作表的深拷贝。
-    参数:
-    - sheet (Worksheet): 要复制的工作表。
-    返回:
-    - cloned_sheet (Worksheet): 工作表的深拷贝副本。
+    Create a deep copy of an existing worksheet.
+    Parameters:
+    - sheet (Worksheet): The worksheet to be copied.
+    Returns:
+    - cloned_sheet (Worksheet): A deep copy of the worksheet.
     """
-    # 创建一个新的工作表
+    # Create a new worksheet
     wb = sheet._parent
     cloned_sheet = wb.create_sheet(title=sheet.title + "_copy")
-    # 复制单元格内容和样式
+    # Copy cell content and styles
     for row in sheet.iter_rows():
         new_row = cloned_sheet.row_dimensions[row[0].row]
         new_row.height = copy(sheet.row_dimensions[row[0].row].height)
@@ -31,10 +31,10 @@ def clone_sheet(sheet: Worksheet) -> Worksheet:
                 new_cell.number_format = copy(cell.number_format)
                 new_cell.protection = copy(cell.protection)
                 new_cell.alignment = copy(cell.alignment)
-    # 复制合并单元格
+    # Copy merged cells
     for merged_cells in sheet.merged_cells.ranges:
         cloned_sheet.merge_cells(str(merged_cells))
-    # 复制列宽
+    # Copy column widths
     for col_letter, column_dimension in sheet.column_dimensions.items():
         cloned_sheet.column_dimensions[col_letter] = copy(column_dimension)
     return cloned_sheet
@@ -42,21 +42,21 @@ def clone_sheet(sheet: Worksheet) -> Worksheet:
 import os
 from openpyxl.drawing.image import Image as XLImage
 
-def save_results_to_sheet(config,experiment_result_template_sheet, results, result_to_cell_map, image_save_dir="experiment_image_result"):
+def save_results_to_sheet(config, experiment_result_template_sheet, results, result_to_cell_map, image_save_dir="experiment_image_result"):
     """
-    将实验结果保存到指定的工作表中的对应单元格中，支持文本和图片。
-    参数：
-    - experiment_result_template_sheet (openpyxl.worksheet.worksheet.Worksheet): 
-      用于保存结果的目标工作表。
-    - results (dict): 包含实验结果的字典，键为结果名称，值为结果数据（可以是文本或PIL图像）。
-    - result_to_cell_map (dict): 结果名称与单元格地址的映射关系。
-    - experiment_index (int or str): 实验索引，用于命名保存的图像文件。
-    - image_save_dir (str): 图像保存目录，默认为 "experiment_image_result"。
+    Save experiment results to corresponding cells in the specified worksheet, supporting both text and images.
+    Parameters:
+    - experiment_result_template_sheet (openpyxl.worksheet.worksheet.Worksheet):
+      The target worksheet for saving results.
+    - results (dict): A dictionary containing experiment results, where keys are result names and values are result data (can be text or PIL images).
+    - result_to_cell_map (dict): A mapping of result names to cell addresses.
+    - experiment_index (int or str): Experiment index used for naming saved image files.
+    - image_save_dir (str): Directory for saving images, defaults to "experiment_image_result".
 
-    返回：
-    - cloned_sheet (openpyxl.worksheet.worksheet.Worksheet): 更新后的结果工作表。
+    Returns:
+    - cloned_sheet (openpyxl.worksheet.worksheet.Worksheet): The updated result worksheet.
     """
-    # 创建指定工作表的一个副本
+    # Create a copy of the specified worksheet
     cloned_sheet = clone_sheet(experiment_result_template_sheet)
     if not os.path.exists(image_save_dir):
         os.makedirs(image_save_dir)
@@ -73,25 +73,25 @@ def save_results_to_sheet(config,experiment_result_template_sheet, results, resu
     for result_key, cell_address in result_to_cell_map.items():
         if result_key in results:
             result_value = results[result_key]
-            # 如果结果是一个 PIL 图像对象
+            # If the result is a PIL Image object
             if isinstance(result_value, Image.Image):
-                # 确定图像保存路径和文件名
+                # Determine the image save path and filename
                 image_filename = f"{config.get('experiment_index')}-{cell_address.replace(':', '_')}.png"
                 image_path = os.path.join(image_save_dir, image_filename)
-                #如果存在同名的图像文件，则删除它
+                # If an image file with the same name exists, delete it
                 if os.path.exists(image_path):
                     os.remove(image_path)
-                # 保存图像
+                # Save the image
                 result_value.save(image_path)
-                # 插入图片到 Excel 单元格
+                # Insert the image into the Excel cell
                 img = XLImage(image_path)
                 img_anchor = cell_address
                 cloned_sheet.add_image(img, img_anchor)
-                # 更新单元格内容为图片的文件名
+                # Update the cell content with the image filename
                 cloned_sheet[cell_address].value = image_filename
             elif isinstance(result_value, list):
-                # 如果结果是列表，则根据提供的地址范围填充数据
-                if '-' in cell_address:  # 检查是否是一个范围
+                # If the result is a list, fill data according to the provided address range
+                if '-' in cell_address:  # Check if it's a range
                     start_cell, end_cell = cell_address.split('-')
                     cells = range_to_cells(start_cell, end_cell)
                     for idx, value in enumerate(result_value):

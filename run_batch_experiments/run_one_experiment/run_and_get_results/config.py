@@ -1,11 +1,11 @@
 """
-配置管理器 - 主配置文件
+Configuration Manager - Main Configuration File
 
-此文件引用多个配置模块，构建完整的配置树。
-配置数据被拆分为多个文件，便于管理和维护。
+This file references multiple configuration modules to build a complete configuration tree.
+Configuration data is split into multiple files for easier management and maintenance.
 """
 
-# 导入各个配置模块
+# Import various configuration modules
 from .config_data.data import DATA_CONFIG
 from .config_data.schedule import SCHEDULE_CONFIG
 from .config_data.model import MODEL_CONFIG
@@ -16,8 +16,8 @@ from .config_data.attack import ATTACK_CONFIG
 class ConfigTree:
     def __init__(self):
         """
-        初始化配置管理器，并定义默认的 config_tree。
-        配置树由多个模块化的配置部分组成。
+        Initialize the configuration manager and define the default config_tree.
+        The configuration tree consists of multiple modular configuration parts.
         """
         self.config_tree = {
             "content": "Config",
@@ -40,20 +40,20 @@ class ConfigTree:
 
     def update_choices_from_stack(self, stack):
         """
-        根据栈中的完整路径，更新配置树中符合条件的键节点的 choice 属性。
+        Update the choice attribute for eligible key nodes in the configuration tree based on the full path in the stack.
 
-        :param stack: 从根节点到目标节点的完整路径栈（仅包含 content）。
+        :param stack: The complete path stack from the root node to the target node (contains only content).
         """
         current_node = self.config_tree
 
-        # 遍历栈中的路径内容，找到对应的节点并更新 choice 属性
-        for i in range(1, len(stack) - 2):  # 从第二个元素开始，直到倒数第二个元素
+        # Traverse the path content in the stack, find the corresponding node, and update the choice attribute
+        for i in range(1, len(stack) - 2):  # Start from the second element until the second-to-last element
             next_content = stack[i + 1]
             found = False
             for child in current_node.get("children", []):
                 if child["content"] == stack[i] and child["type"] == "key":
                     found = True
-                    # 更新 choice 属性为下一个节点的内容
+                    # Update the choice attribute to the content of the next node
                     if "choice" in child:
                         child["choice"] = next_content
                     break
@@ -61,7 +61,7 @@ class ConfigTree:
             if not found:
                 raise ValueError(f"Path segment not found or invalid type/choice: {stack[i]}")
 
-            # 移动到下一个节点
+            # Move to the next node
             for child in current_node.get("children", []):
                 if child["content"] == stack[i]:
                     current_node = child
@@ -69,7 +69,7 @@ class ConfigTree:
 
     def check_unique_keys(self):
         """
-        检查配置树中的所有 key 类型节点的 content 是否唯一。
+        Check if the content of all key-type nodes in the configuration tree is unique.
         """
         seen_keys = set()
 
@@ -87,16 +87,16 @@ class ConfigTree:
 
     def get(self, path, default=None):
         """
-        获取配置树中指定路径的值。
+        Get the value at the specified path in the configuration tree.
 
-        :param path: 路径字符串，格式为 "Config-Data_Config-Dataset"。
-        :param default: 如果路径不存在，返回的默认值。
-        :return: 节点的 content 值，如果路径不存在且提供了默认值，则返回默认值。
+        :param path: Path string in the format "Config-Data_Config-Dataset".
+        :param default: Default value to return if the path does not exist.
+        :return: The content value of the node, or the default value if the path does not exist and a default is provided.
         """
         keys = path.split('-')
 
         def find_node(node, key):
-            """递归查找节点"""
+            """Recursively find a node"""
             if node["content"] == key:
                 return node
             for child in node.get("children", []):
@@ -105,7 +105,7 @@ class ConfigTree:
                     return result
             return None
 
-        # 查找路径的第一个节点
+        # Find the first node of the path
         first_key = keys[0]
         current_node = find_node(self.config_tree, first_key)
 
@@ -114,7 +114,7 @@ class ConfigTree:
                 return default
             raise ValueError(f"First segment not found: {first_key} in path: {path}")
 
-        # 遍历剩余的路径片段
+        # Traverse the remaining path segments
         for i, key in enumerate(keys[1:], start=1):
             found = False
             for child in current_node.get("children", []):
@@ -127,13 +127,13 @@ class ConfigTree:
                     return default
                 raise ValueError(f"Path not found at segment {i}: {key} in path: {path}")
 
-        # 检查当前节点是否是键类型
+        # Check if the current node is a key type
         if current_node["type"] != "key":
             if default is not None:
                 return default
             raise ValueError(f"Node at path {path} is not a key type")
 
-        # 检查当前节点是否有 choice
+        # Check if the current node has a choice
         if "choice" in current_node:
             choices = current_node["choice"]
             if isinstance(choices, str):
@@ -152,30 +152,30 @@ class ConfigTree:
                     raise ValueError(f"Choice not found in children: {choice}")
             return selected_values
 
-        # 检查当前节点的子节点是否都是值类型
+        # Check if all children of the current node are value types
         value_children = [child for child in current_node["children"] if child["type"] == "value"]
 
-        # 检查子节点是否唯一
+        # Check if the child node is unique
         if len(value_children) != 1:
             if default is not None:
                 return default
             raise ValueError(f"Expected exactly one value child, but found {len(value_children)} at path: {path}")
 
-        # 返回唯一的值子节点的 content
+        # Return the content of the unique value child node
         return value_children[0]["content"]
 
     def set(self, path, new_content):
         """
-        设置配置树中指定路径的值。
+        Set the value at the specified path in the configuration tree.
 
-        :param path: 路径字符串，格式为 "Config-Data_Config-Dataset"。
-        :param new_content: 新的 content 值。
+        :param path: Path string in the format "Config-Data_Config-Dataset".
+        :param new_content: New content value.
         """
         keys = path.split('-')
-        stack = []  # 使用栈记录访问路径
+        stack = []  # Use a stack to record the access path
 
         def find_node(node, key):
-            """递归查找节点"""
+            """Recursively find a node"""
             stack.append(node["content"])
             if node["content"] == key:
                 return node
@@ -186,14 +186,14 @@ class ConfigTree:
             stack.pop()
             return None
 
-        # 查找路径的第一个节点
+        # Find the first node of the path
         first_key = keys[0]
         current_node = find_node(self.config_tree, first_key)
 
         if current_node is None:
             raise ValueError(f"First segment not found: {first_key} in path: {path}")
 
-        # 遍历剩余的路径片段
+        # Traverse the remaining path segments
         for i, key in enumerate(keys[1:], start=1):
             found = False
             for child in current_node.get("children", []):
@@ -207,11 +207,11 @@ class ConfigTree:
 
         self.update_choices_from_stack(stack)
 
-        # 检查当前节点是否是键类型
+        # Check if the current node is a key type
         if current_node["type"] != "key":
             raise ValueError(f"Node at path {path} is not a key type")
 
-        # 检查当前节点是否有 choice
+        # Check if the current node has a choice
         if "choice" in current_node:
             if isinstance(new_content, list):
                 valid_choices = [child["content"] for child in current_node["children"] if child["type"] == "value"]
@@ -219,7 +219,7 @@ class ConfigTree:
                     if choice not in valid_choices:
                         raise ValueError(f"Invalid choice: {choice}. Valid choices are: {valid_choices}")
 
-                # 设置新的 choice
+                # Set the new choice
                 current_node["choice"] = new_content
                 return
             elif isinstance(new_content, str):
@@ -227,28 +227,28 @@ class ConfigTree:
                 if new_content not in valid_choices:
                     raise ValueError(f"Invalid choice: {new_content}. Valid choices are: {valid_choices}")
 
-                # 设置新的 choice
+                # Set the new choice
                 current_node["choice"] = new_content
                 return
             else:
                 raise ValueError(f"Invalid type for new_content: {type(new_content)}. Expected list or str.")
 
-        # 检查当前节点的子节点是否都是值类型
+        # Check if all children of the current node are value types
         value_children = [child for child in current_node["children"] if child["type"] == "value"]
 
-        # 检查子节点是否唯一
+        # Check if the child node is unique
         if len(value_children) != 1:
             raise ValueError(f"Expected exactly one value child, but found {len(value_children)} at path: {path}")
 
-        # 设置唯一的值子节点的 content
+        # Set the content of the unique value child node
         value_children[0]["content"] = new_content
 
 
-# 创建全局配置实例
+# Create a global configuration instance
 config = ConfigTree()
 
 if __name__ == "__main__":
-    # 测试用例 3: 更新 fedprox_mu 的值
+    # Test case 3: Update the value of fedprox_mu
     config = ConfigTree()
     config.set("fedprox_mu", 0.02)
     print("After updating fedprox_mu to 0.02:")
